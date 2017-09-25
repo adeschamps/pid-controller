@@ -38,8 +38,7 @@ pub struct Controller<
     output: Control,
     previous_error: Measure,
     accumulated_error: Integral,
-    phantom_time: PhantomData<Time>,
-    phantom_derivative: PhantomData<Derivative>,
+    phantom: PhantomData<(Time, Derivative)>,
 }
 
 
@@ -62,8 +61,7 @@ impl <Measure, Control, Time, P, I, D, Integral, Derivative>
             output: initial_output,
             previous_error: initial_error,
             accumulated_error: initial_accumulated_error,
-            phantom_time: PhantomData::<Time>,
-            phantom_derivative: PhantomData::<Derivative>,
+            phantom: PhantomData::<(Time, Derivative)>,
         }
     }
 }
