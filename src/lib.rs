@@ -10,6 +10,11 @@ use std::marker::PhantomData;
 // Control = D * (Measure / Time)
 // D = Control * Time / Measure
 
+pub trait PidController<Measure, Control, Time> {
+    fn update(&mut self, error: Measure, elapsed: Time);
+    fn output(&self) -> Control;
+}
+
 pub struct Controller<
     Measure,
     Control,
@@ -33,20 +38,11 @@ pub struct Controller<
 
 impl <Measure, Control, Time, P, I, D, Integral, Derivative>
     Controller<Measure, Control, Time>
-    where Time: Div<Measure> + Copy,
-          Measure: AddAssign<Measure>
-    + Sub<Measure, Output=Measure>
-    + Mul<Time, Output=Integral>
-    + Div<Time, Output=Derivative>
-    + Copy,
-          Control: Add<Control, Output=Control> + Copy
+    where Measure: Mul<Time, Output=Integral> + Div<Time, Output=Derivative>,
+          Control: Add<Control, Output=Control>
     + Div<Measure, Output=P>
     + Div<Integral, Output=I>
     + Div<Derivative, Output=D>,
-          P: Mul<Measure, Output=Control> + Copy,
-          I: Mul<Integral, Output=Control> + Copy,
-          D: Mul< <Measure as Div<Time>>::Output, Output=Control> + Copy,
-          Integral: AddAssign<Integral> + Copy,
 {
     pub fn new(k_p: P, k_i: I, k_d: D,
                initial_output: Control,
@@ -63,16 +59,36 @@ impl <Measure, Control, Time, P, I, D, Integral, Derivative>
             phantom_derivative: PhantomData::<Derivative>,
         }
     }
+}
 
-    pub fn update(&mut self, error: Measure, delta: Time)
-    {
+
+impl<Measure, Control, Time, P, I, D, Integral, Derivative> PidController<Measure, Control, Time>
+    for Controller<Measure, Control, Time>
+where
+    Time: Div<Measure> + Copy,
+    Measure: AddAssign<Measure>
+        + Sub<Measure, Output = Measure>
+        + Mul<Time, Output = Integral>
+        + Div<Time, Output = Derivative>
+        + Copy,
+    Control: Add<Control, Output = Control>
+        + Copy
+        + Div<Measure, Output = P>
+        + Div<Integral, Output = I>
+        + Div<Derivative, Output = D>,
+    P: Mul<Measure, Output = Control> + Copy,
+    I: Mul<Integral, Output = Control> + Copy,
+    D: Mul<<Measure as Div<Time>>::Output, Output = Control> + Copy,
+    Integral: AddAssign<Integral> + Copy,
+{
+    fn update(&mut self, error: Measure, delta: Time) {
         self.accumulated_error += error * delta;
         let error_delta = (error - self.previous_error) / delta;
         self.output = self.k_p * error + self.k_i * self.accumulated_error + self.k_d * error_delta;
         self.previous_error = error;
     }
 
-    pub fn output(&self) -> Control {
+    fn output(&self) -> Control {
         self.output
     }
 }
