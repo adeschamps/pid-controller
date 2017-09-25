@@ -15,9 +15,10 @@ pub struct Controller<
     Control,
     Time,
     Integral = <Measure as Mul<Time>>::Output,
+    Derivative = <Measure as Div<Time>>::Output,
     P = <Control as Div<Measure>>::Output,
-    I = <Control as Div<<Measure as Mul<Time>>::Output>>::Output,
-    D = <Control as Mul<<Time as Div<Measure>>::Output>>::Output,
+    I = <Control as Div<Integral>>::Output,
+    D = <Control as Div<Derivative>>::Output,
 > {
     k_p: P,
     k_i: I,
@@ -26,20 +27,22 @@ pub struct Controller<
     previous_error: Measure,
     accumulated_error: Integral,
     phantom_time: PhantomData<Time>,
+    phantom_derivative: PhantomData<Derivative>,
 }
 
 
-impl <Measure, Control, Time, P, I, D, Integral>
+impl <Measure, Control, Time, P, I, D, Integral, Derivative>
     Controller<Measure, Control, Time>
     where Time: Div<Measure> + Copy,
           Measure: AddAssign<Measure>
     + Sub<Measure, Output=Measure>
     + Mul<Time, Output=Integral>
-    + Div<Time> + Copy,
+    + Div<Time, Output=Derivative>
+    + Copy,
           Control: Add<Control, Output=Control> + Copy
     + Div<Measure, Output=P>
-    + Div< <Measure as Mul<Time>>::Output, Output=I>
-    + Mul< <Time as Div<Measure>>::Output, Output=D>,
+    + Div<Integral, Output=I>
+    + Div<Derivative, Output=D>,
           P: Mul<Measure, Output=Control> + Copy,
           I: Mul<Integral, Output=Control> + Copy,
           D: Mul< <Measure as Div<Time>>::Output, Output=Control> + Copy,
@@ -57,6 +60,7 @@ impl <Measure, Control, Time, P, I, D, Integral>
             previous_error: initial_error,
             accumulated_error: initial_accumulated_error,
             phantom_time: PhantomData::<Time>,
+            phantom_derivative: PhantomData::<Derivative>,
         }
     }
 
