@@ -10,6 +10,13 @@ use std::marker::PhantomData;
 // Control = D * (Measure / Time)
 // D = Control * Time / Measure
 
+/// A simple PID controller.
+///
+/// A controller is generic over three parameters:
+///
+/// - `Measure`: the type of the input, commonly called the set point.
+/// - `Control`: the type of the output.
+/// - `Time`: the duration between updates.
 pub trait PidController<Measure, Control, Time> {
     fn update(&mut self, error: Measure, elapsed: Time);
     fn output(&self) -> Control;
